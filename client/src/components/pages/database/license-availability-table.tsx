@@ -1,7 +1,7 @@
 import styles from "./license-availability-table.module.css";
 import licenseData from "../../../data/licenses.json";
 import CustomTable from "@components/ui/table";
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { useSearch } from "@tanstack/react-router";
 import {
   validateBusinessLicense,
@@ -19,7 +19,7 @@ import { RowWithSubRows } from "@components/ui/table";
 import FilterDropdown from "../../ui/filter-dropdown";
 import ZipCodeFilter from "./zip-code-filter";
 import { Selection } from "react-aria-components";
-import { FormattedMessage } from "react-intl";
+import { FormattedMessage, useIntl, type IntlShape } from "react-intl";
 
 const getRowData = (
   zipcode: EligibleBostonZipcode,
@@ -33,6 +33,7 @@ const getRowData = (
   openApplicationsTotal: number,
   openApplicationsAllAlc: number,
   openApplicationsBeerWine: number,
+  intl: IntlShape,
 ) => {
   let rowData;
   let subRowData;
@@ -48,7 +49,7 @@ const getRowData = (
     ]
     subRowData = [
       [
-        "All Alcohol Licenses",
+        intl.formatMessage({ id: "database.availableLicenses.allAlcohol" }),
         String(MAX_ALL_ALC_PER_ZIP),
         String(allAlcoholAvailable),
         String(totalApplicantsAllAlc),
@@ -56,7 +57,7 @@ const getRowData = (
         String(MAX_ALL_ALC_PER_ZIP - allAlcoholAvailable),
       ],
       [
-        "Beer & Wine Licenses",
+        intl.formatMessage({ id: "database.availableLicenses.wineBeerLicenses" }),
         String(MAX_BEER_WINE_PER_ZIP),
         String(beerWineAvailable),
         String(totalApplicantsBeerWine),
@@ -75,7 +76,7 @@ const getRowData = (
     ]
     subRowData = [
       [
-        "All Alcohol Licenses",
+        intl.formatMessage({ id: "database.availableLicenses.allAlcohol" }),
         String(MAX_ALL_ALC_PER_ZIP),
         String(allAlcoholAvailable),
         String(totalApplicantsAllAlc),
@@ -94,7 +95,7 @@ const getRowData = (
     ]
     subRowData = [
       [
-        "Beer & Wine Licenses",
+        intl.formatMessage({ id: "database.availableLicenses.wineBeerLicenses" }),
         String(MAX_BEER_WINE_PER_ZIP),
         String(beerWineAvailable),
         String(totalApplicantsBeerWine),
@@ -114,7 +115,8 @@ const getRowData = (
 const formatData = (
   data: BusinessLicense[],
   zipcodeList: Set<EligibleBostonZipcode>,
-  licenseType: "All Alcoholic Beverages" | "Wines and Malt Beverages" | null
+  licenseType: "All Alcoholic Beverages" | "Wines and Malt Beverages" | null,
+  intl: IntlShape,
 ) => {
   const zips = [...zipcodeList];
   const grantedData = data.filter((l) => l.status === "Granted");
@@ -132,7 +134,7 @@ const formatData = (
     const totalApplicantsAllAlc = byZip.filter((l) => l.alcohol_type === "All Alcoholic Beverages").length;
     const totalApplicantsBeerWine = byZip.filter((l) => l.alcohol_type === "Wines and Malt Beverages").length;
 
-    const {rowData, subRowData} = getRowData(zipcode, licenseType, totalAvailable, allAlcoholAvailable, beerWineAvailable, totalApplicantsTotal, totalApplicantsAllAlc, totalApplicantsBeerWine, openApplicationsTotal, openApplicationsAllAlc, openApplicationsBeerWine)
+    const {rowData, subRowData} = getRowData(zipcode, licenseType, totalAvailable, allAlcoholAvailable, beerWineAvailable, totalApplicantsTotal, totalApplicantsAllAlc, totalApplicantsBeerWine, openApplicationsTotal, openApplicationsAllAlc, openApplicationsBeerWine, intl)
 
     const entry = {
       rowData: rowData,
@@ -145,12 +147,23 @@ const formatData = (
   return d;
 };
 
-const licenseTypeOptions = [
-  { id: "react-aria-1", name: "All Alcoholic Beverages" as const },
-  { id: "react-aria-2", name: "Wines and Malt Beverages" as const },
-];
-
 const LicenseAvailabilityTable = () => {
+  const intl = useIntl();
+  const licenseTypeOptions = useMemo(
+    () => [
+      {
+        id: "react-aria-1",
+        value: "All Alcoholic Beverages" as const,
+        name: intl.formatMessage({ id: "database.availableLicenses.allAlcohol" }),
+      },
+      {
+        id: "react-aria-2",
+        value: "Wines and Malt Beverages" as const,
+        name: intl.formatMessage({ id: "database.availableLicenses.wineBeerLicenses" }),
+      },
+    ],
+    [intl]
+  );
   const { zip, section, expand } = useSearch({ from: "/database" });
   const isDeepLinked = section === "license-availability";
   const initialZip =
@@ -195,15 +208,15 @@ const LicenseAvailabilityTable = () => {
   }, [isDeepLinked]);
 
   const availabilityHeaders = [
-    "Zipcode",
-    "Total Licenses",
-    "Licenses Available",
-    "Total Applicants",
-    "Open Applications",
-    "Licenses Granted",
+    intl.formatMessage({ id: "database.availableLicenses.zipCode" }),
+    intl.formatMessage({ id: "database.availableLicenses.totalLicenses" }),
+    intl.formatMessage({ id: "database.availableLicenses.licensesAvailable" }),
+    intl.formatMessage({ id: "database.availableLicenses.totalApplicants" }),
+    intl.formatMessage({ id: "database.availableLicenses.openApplicants" }),
+    intl.formatMessage({ id: "database.availableLicenses.licensesGranted" }),
   ];
 
-  const formattedData = formatData(data, zipcodeList, licenseFilter);
+  const formattedData = formatData(data, zipcodeList, licenseFilter, intl);
 
   const onLicenseTypeSelectionChange = useCallback(
     (keys: Selection) => {
@@ -214,13 +227,13 @@ const LicenseAvailabilityTable = () => {
       );
 
       if (selectedLicenseType.length == 1) {
-        setLicenseFilter(selectedLicenseType[0].name)
+        setLicenseFilter(selectedLicenseType[0].value)
       } else {
         setLicenseFilter(null)
       }
 
     },
-    []
+    [licenseTypeOptions]
   );
 
   if (formattedData == null) {
@@ -242,14 +255,14 @@ const LicenseAvailabilityTable = () => {
         />
         <FilterDropdown
           titleId="database.availableLicenses.licenseType"
-          label="License Type dropdown selection"
+          label={intl.formatMessage({ id: "database.availableLicenses.licenseType" })}
           options={licenseTypeOptions}
           selected={selectedLicDropdownOptions}
           onSelectionChange={onLicenseTypeSelectionChange}
         />
       </div>
       <CustomTable
-        ariaLabel="Licenses by Zipcode"
+        ariaLabel={intl.formatMessage({ id: "database.availableLicenses.tableAriaLabel" })}
         tableData={formattedData}
         headers={availabilityHeaders}
         defaultSubRowsExpanded={isDeepLinked && expand}

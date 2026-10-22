@@ -5,6 +5,7 @@ import {
 import { EligibleBostonZipcode } from "@/services/data-interface/data-interface";
 import { Selection } from "react-aria-components";
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { useIntl } from "react-intl";
 
 
 interface ZipCodeFilterProps {
@@ -14,6 +15,7 @@ interface ZipCodeFilterProps {
 
 
 const ZipCodeFilter = ({ setZipcodeList, initialZip }: ZipCodeFilterProps) => {
+  const intl = useIntl();
   const [selectedDropdownOptions, setSelectedDropdownOptions] =
     useState<Selection>(new Set());
 
@@ -62,7 +64,7 @@ const ZipCodeFilter = ({ setZipcodeList, initialZip }: ZipCodeFilterProps) => {
   return (
     <FilterDropdown
         titleId="database.availableLicenses.zipCode"
-        label="Zipcode dropdown selection"
+        label={intl.formatMessage({ id: "database.availableLicenses.zipCode" })}
         options={dropdownZipOptions}
         selected={selectedDropdownOptions}
         onSelectionChange={onZipSelectionChange}

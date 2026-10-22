@@ -13,7 +13,7 @@ import { RowWithSubRows } from "@components/ui/table";
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { useSearch } from "@tanstack/react-router";
 import licenseData from "../../../data/licenses.json";
-import { FormattedMessage } from "react-intl";
+import { FormattedMessage, useIntl, type IntlShape } from "react-intl";
 import { isEligibleBostonZipCode } from "../../../services/data-interface/data-interface";
 import FilterDropdown from "@/components/ui/filter-dropdown";
 import ZipCodeFilter from "./zip-code-filter";
@@ -28,18 +28,28 @@ const statusStyles: Record<ApplicationStatusType, string> = {
     "bg-license-deferred-yellow text-font-dark rounded-md px-[16px] py-[4px]",
 }
 
-// Cell formatter function - only formats status column in sub-rows
-const statusCellFormatter = (
+// Translate display values while keeping canonical values for status styling.
+const applicationCellFormatter = (
   cell: string,
   _rowIndex: number,
   cellIndex: number,
   isSubRow: boolean
 ): CellFormat => {
-  // Only format the last column (Status - index 6) in sub-rows
+  if (isSubRow && cellIndex === 4) {
+    if (cell === "All Alcoholic Beverages") {
+      return { content: <FormattedMessage id="database.recentApplications.allAlcohol" /> };
+    }
+    if (cell === "Wines and Malt Beverages") {
+      return { content: <FormattedMessage id="database.recentApplications.wineAndBeer" /> };
+    }
+  }
+
   if (isSubRow && cellIndex === 6) {
     const statusClass = statusStyles[cell as ApplicationStatusType] || "";
     return {
-      content: cell,
+      content: statusClass
+        ? <FormattedMessage id={`database.recentApplications.${cell.toLowerCase()}`} />
+        : cell,
       className: statusClass,
     };
   }
@@ -51,7 +61,8 @@ const statusCellFormatter = (
 const formatData = (
   data: BusinessLicense[],
   zipcodeList: Set<EligibleBostonZipcode>,
-  applicationStatusList: Set<ApplicationStatusType>
+  applicationStatusList: Set<ApplicationStatusType>,
+  intl: IntlShape,
 ) => {
   const zips = [...zipcodeList];
   const formattedData = zips.map((zipcode) => {
@@ -60,7 +71,7 @@ const formatData = (
     const subrows = applicants.map((applicant) => {
       return [
         applicant.business_name,
-        applicant.dba_name ?? "None Provided",
+        applicant.dba_name ?? intl.formatMessage({ id: "database.recentApplications.noneProvided" }),
         applicant.address,
         applicant.license_number,
         applicant.alcohol_type,
@@ -76,7 +87,7 @@ const formatData = (
         "_",
         "_",
         "_",
-        `Total Applicants: ${applicants.length}`,
+        `${intl.formatMessage({ id: "database.recentApplications.totalApplicants" })} ${applicants.length}`,
       ],
       subRowData: subrows,
     };
@@ -88,6 +99,7 @@ const formatData = (
 };
 
 const RecentApplicationTable = () => {
+  const intl = useIntl();
   const { zip, section, expand } = useSearch({ from: "/database" });
   const isDeepLinked = section === "recent-applications";
   const initialZip =
@@ -127,22 +139,23 @@ const RecentApplicationTable = () => {
     return () => cancelAnimationFrame(frameId);
   }, [isDeepLinked]);
   const recentApplicationHeaders = [
-    "Zipcode/Business Name",
-    "Doing Business As",
-    "Street Address",
-    "License Number",
-    "Licenses Type",
-    "Application Date",
-    "Status",
+    intl.formatMessage({ id: "database.recentApplications.zipCodeBusinessName" }),
+    intl.formatMessage({ id: "database.recentApplications.dba" }),
+    intl.formatMessage({ id: "database.recentApplications.streetAddress" }),
+    intl.formatMessage({ id: "database.recentApplications.licenseNumber" }),
+    intl.formatMessage({ id: "database.recentApplications.licenseType" }),
+    intl.formatMessage({ id: "database.recentApplications.applicationDate" }),
+    intl.formatMessage({ id: "database.recentApplications.applicationStatus" }),
   ];
 
   const dropdownStatusOptions = useMemo(
     () =>
       [...ApplicationStatusTypes].map((status, index) => ({
         id: `react-aria-${index + 1}`,
-        name: String(status),
+        value: status,
+        name: intl.formatMessage({ id: `database.recentApplications.${status.toLowerCase()}` }),
       })),
-    []
+    [intl]
   );
   const [selectedStatusDropdownOptions, setSelectedStatusDropdownOptions] =
     useState<Selection>(new Set());
@@ -159,7 +172,7 @@ const RecentApplicationTable = () => {
       );
 
       const statuses = selectedOptions.map(
-        (option) => option.name as ApplicationStatusType
+        (option) => option.value
       );
 
       if (statuses.length) {
@@ -171,7 +184,7 @@ const RecentApplicationTable = () => {
     [dropdownStatusOptions]
   );
 
-  const formattedData = formatData(data, zipcodeList, statusFilter);
+  const formattedData = formatData(data, zipcodeList, statusFilter, intl);
 
   if (formattedData == null) {
     return null;
@@ -192,7 +205,7 @@ const RecentApplicationTable = () => {
           />
           <FilterDropdown
             titleId="database.recentApplications.applicationStatus"
-            label="Application Status dropdown selection"
+            label={intl.formatMessage({ id: "database.recentApplications.applicationStatus" })}
             options={dropdownStatusOptions}
             selected={selectedStatusDropdownOptions}
             onSelectionChange={onStatusSelectionChange}
@@ -211,13 +224,15 @@ const RecentApplicationTable = () => {
                   {({ close }) => (
                     <>
                     <div className={tableStyles.legendHeader}>
-                      <h2 id="legend-header">Recent Application Legend</h2>
-                      <Button onPress={close} className={tableStyles.legendCloseButton}>✕</Button>
+                      <h2 id="legend-header"><FormattedMessage id="database.recentApplications.legendTitle" /></h2>
+                      <Button onPress={close} aria-label={intl.formatMessage({ id: "ui.closeDialog" })} className={tableStyles.legendCloseButton}>✕</Button>
                     </div>
                     <ul className={tableStyles.legendList}>
                       {[...ApplicationStatusTypes].map((appStatus) => (
                         <li key={appStatus} className={tableStyles.legendItem}>
-                          <div className={`${statusStyles[appStatus]} ${tableStyles.legendItemBadge}`}>{appStatus}</div>
+                          <div className={`${statusStyles[appStatus]} ${tableStyles.legendItemBadge}`}>
+                            <FormattedMessage id={`database.recentApplications.${appStatus.toLowerCase()}`} />
+                          </div>
                           <p className={tableStyles.legendItemDescription}>
                             <FormattedMessage id={`database.recentApplications.${appStatus.toLowerCase()}.description`}/>
                           </p>
@@ -234,10 +249,10 @@ const RecentApplicationTable = () => {
           </div>
         </div>
       <CustomTable
-        ariaLabel="Recent License Applications by Zipcode"
+        ariaLabel={intl.formatMessage({ id: "database.recentApplications.tableAriaLabel" })}
         tableData={formattedData}
         headers={recentApplicationHeaders}
-        cellFormatter={statusCellFormatter}
+        cellFormatter={applicationCellFormatter}
         defaultSubRowsExpanded={isDeepLinked && expand}
       />
     </section>

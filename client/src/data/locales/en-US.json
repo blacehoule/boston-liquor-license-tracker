@@ -38,6 +38,7 @@
   "database.availableLicenses.totalApplicants": "Total Applicants",
   "database.availableLicenses.openApplicants": "Open Applicants",
   "database.availableLicenses.licensesGranted": "Licenses Granted",
+  "database.availableLicenses.tableAriaLabel": "Licenses by Zipcode",
 
   "database.header.description": "Browse through available licenses in each of Boston's ZIP codes. View important information regarding each license type and recent license applications, as well as important dates for license applications.",
   "database.header.nextMeeting": "The next Licensing Boarding meeting is: <strong>{nextMeetingDate, date, long}</strong>",
@@ -73,6 +74,11 @@
   "database.recentApplications.expired.description": "Applications that have passed the amount of time for the City of Boston to consider them. Applicants will have to reapply.",
   "database.recentApplications.deferred.description": "License Applications that have yet to be considered by the Licensing Board. (This applies to applications before the next meeting)",
   "database.recentApplications.totalApplicants": "Total Applicants:",
+  "database.recentApplications.tableAriaLabel": "Recent License Applications by Zipcode",
+  "database.recentApplications.noneProvided": "None Provided",
+  "database.recentApplications.legendTitle": "Recent Application Legend",
+
+  "ui.closeDialog": "Close dialog",
 
   "home.aboutUs.title": "Who We Are:",
   "home.aboutUs.weAre.part1": "We are a collection of restaurant owners, bartenders, chefs, and patrons; <b>Just Like You</b>. We understand how hard it is navigating the red tape of liquor licenses in Boston especially as a newcomer.",
